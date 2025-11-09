@@ -1,0 +1,20 @@
+{
+  "warehouse": {
+    "width_m": 100,
+    "height_m": 50,
+    "gate": "short_edge_right",
+    "zones": [
+      { "id": "A", "from_m": 0, "to_m": 25 },
+      { "id": "B", "from_m": 25, "to_m": 50 },
+      { "id": "C", "from_m": 50, "to_m": 75 },
+      { "id": "D", "from_m": 75, "to_m": 100 }
+    ],
+    "rack": {
+      "length_m": 3.6,
+      "width_m": 3.0,
+      "levels": 7,
+      "cluster_size": 3,
+      "aisle_m": 4
+    }
+  }
+}
