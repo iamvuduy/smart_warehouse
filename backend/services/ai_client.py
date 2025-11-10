@@ -1,3 +1,7 @@
+"""
+OpenAI API client for warehouse optimization.
+Updated: 2025-11-10 - Fixed API compatibility
+"""
 import json
 import os
 from typing import Any, Dict, List, Optional
