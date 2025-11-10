@@ -4,7 +4,9 @@ import LayoutCanvas from "./components/LayoutCanvas";
 import SkuTable from "./components/SkuTable";
 import Toast from "./components/Toast";
 
-const API_BASE = "http://localhost:8000/api";
+// Use environment variable for API base URL (supports both local and production)
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 
 export default function AppNew() {
   const [sku, setSku] = useState({

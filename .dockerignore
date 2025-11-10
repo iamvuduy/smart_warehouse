@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+backend/.venv/
+.venv/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Database
+*.sqlite3
+*.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+!RAILWAY_DEPLOYMENT.md
+
+# Test files
+test_*.py
+*_test.py
+
+# Data files
+data.docx
+*.xlsx
+*.csv

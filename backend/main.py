@@ -24,9 +24,17 @@ print(f"OPENAI_API_KEY loaded: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}"
 
 app = FastAPI(title="AI Smart Warehouse Optimization (SLAP)")
 
+# Configure CORS for production and development
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://*.railway.app",
+    "https://*.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],  # Allow all origins for simplicity
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,6 +53,22 @@ def get_db():
 def startup_event():
     # create tables
     init_db()
+
+
+@app.get("/")
+def root():
+    """Health check endpoint for Railway"""
+    return {
+        "status": "ok",
+        "message": "Smart Warehouse API is running",
+        "docs": "/docs"
+    }
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy"}
 
 
 @app.post("/api/sku/add", response_model=schemas.SKUItemOut)
