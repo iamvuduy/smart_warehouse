@@ -33,7 +33,7 @@ function formatValue(value, digits = 4) {
   return num.toFixed(digits);
 }
 
-export default function SkuTable({ items, onRefresh }) {
+export default function SkuTable({ items, onRefresh, onDelete }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({
     sku_code: "",
@@ -109,6 +109,7 @@ export default function SkuTable({ items, onRefresh }) {
     setDeletingId(id);
     try {
       await axios.delete(`${API_BASE}/sku/${id}`);
+      onDelete?.(id); // Call cleanup before refresh
       await onRefresh?.();
     } catch (err) {
       alert(err?.response?.data?.detail || err.message);

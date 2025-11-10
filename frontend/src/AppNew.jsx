@@ -52,32 +52,29 @@ export default function AppNew() {
     fetchList();
   }, []);
 
-  // Validate placements when SKU list changes
-  useEffect(() => {
-    if (placements && placements.placements && list.length > 0) {
-      const currentSkuIds = list.map((item) => item.id);
-      const filteredPlacements = placements.placements.filter((p) =>
-        currentSkuIds.includes(p.id)
-      );
-
-      // Nếu có SKU bị xóa, cập nhật placements
-      if (filteredPlacements.length !== placements.placements.length) {
-        console.log("Cleaning up deleted SKUs from placements");
-        const newPlacements = {
-          ...placements,
-          placements: filteredPlacements,
-        };
-        setPlacements(newPlacements);
-      }
-    }
-  }, [list]);
-
   async function fetchList() {
     try {
       const res = await axios.get(`${API_BASE}/sku/list`);
       setList(res.data);
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  // Function to manually clean up placements after SKU deletion
+  function cleanupPlacements(deletedSkuId) {
+    if (placements && placements.placements) {
+      const filteredPlacements = placements.placements.filter(
+        (p) => p.id !== deletedSkuId
+      );
+      if (filteredPlacements.length !== placements.placements.length) {
+        console.log("Removed deleted SKU from placements:", deletedSkuId);
+        const newPlacements = {
+          ...placements,
+          placements: filteredPlacements,
+        };
+        setPlacements(newPlacements);
+      }
     }
   }
 
@@ -595,7 +592,11 @@ export default function AppNew() {
           </section>
         </div>
 
-        <SkuTable items={list} onRefresh={fetchList} />
+        <SkuTable
+          items={list}
+          onRefresh={fetchList}
+          onDelete={cleanupPlacements}
+        />
       </main>
 
       {/* Toast Notification */}
