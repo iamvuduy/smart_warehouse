@@ -2,24 +2,38 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import LayoutCanvas from "./components/LayoutCanvas";
 import SkuTable from "./components/SkuTable";
+import Toast from "./components/Toast";
 
 const API_BASE = "http://localhost:8000/api";
 
 export default function AppNew() {
   const [sku, setSku] = useState({
     sku_code: "",
+    product_name: "",
     f: 0.0,
     w: 0.0,
     s: 0.0,
     i: 0.0,
   });
   const [list, setList] = useState([]);
-  const [placements, setPlacements] = useState(null);
+  const [placements, setPlacements] = useState(() => {
+    // Khôi phục placements từ localStorage khi load trang
+    const saved = localStorage.getItem("warehousePlacements");
+    return saved ? JSON.parse(saved) : null;
+  });
   const [isAdding, setIsAdding] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [aiInsight, setAiInsight] = useState(null);
   const [optInstructions, setOptInstructions] = useState("");
+  const [toast, setToast] = useState(null);
+
+  // Lưu placements vào localStorage mỗi khi nó thay đổi
+  useEffect(() => {
+    if (placements) {
+      localStorage.setItem("warehousePlacements", JSON.stringify(placements));
+    }
+  }, [placements]);
 
   useEffect(() => {
     fetchList();
@@ -62,46 +76,104 @@ export default function AppNew() {
       const normalized = normalizeInputs(sku);
       const payload = {
         sku_code: sku.sku_code,
+        product_name: sku.product_name,
         f: normalized.f,
         w: normalized.w,
         s: normalized.s,
         i: normalized.i,
       };
       await axios.post(`${API_BASE}/sku/add`, payload);
-      setSku({ sku_code: "", f: 0, w: 0, s: 0, i: 0 });
+      setSku({ sku_code: "", product_name: "", f: 0, w: 0, s: 0, i: 0 });
       await fetchList();
+
+      setToast({
+        message: `✅ SKU "${payload.sku_code}" added successfully!`,
+        type: "success",
+        duration: 3000,
+      });
     } catch (err) {
-      alert(err?.response?.data?.detail || err.message);
+      setToast({
+        message: `❌ ${err?.response?.data?.detail || err.message}`,
+        type: "error",
+      });
     } finally {
       setIsAdding(false);
     }
   }
 
   async function handleVisualize() {
+    if (list.length === 0) {
+      setToast({
+        message: "⚠️ Please add at least one SKU before optimizing placement",
+        type: "warning",
+      });
+      return;
+    }
+
     setIsOptimizing(true);
     setAiInsight(null);
     try {
-      const payload = optInstructions.trim()
-        ? { instructions: optInstructions.trim() }
-        : {};
-      const res = await axios.post(`${API_BASE}/sku/optimize`, payload);
+      // First, call visualize to get basic layout with priority-based placement
+      const res = await axios.get(`${API_BASE}/sku/visualize`);
       setPlacements(res.data);
 
-      const summary = res.data?.assistant_summary ?? null;
-      const reassignments = Array.isArray(res.data?.assistant_reassignments)
-        ? res.data.assistant_reassignments
-        : [];
+      // Show optimization summary
+      const counts = res.data.counts || {};
+      const totalPlaced = Object.values(counts).reduce(
+        (sum, count) => sum + count,
+        0
+      );
 
-      if (summary || reassignments.length > 0) {
-        setAiInsight({ summary, reassignments });
+      const zoneSummary = Object.entries(counts)
+        .map(([zone, count]) => {
+          const zoneName =
+            zone === "A"
+              ? "High Priority"
+              : zone === "B"
+              ? "Medium-High Priority"
+              : zone === "C"
+              ? "Medium-Low Priority"
+              : "Low Priority";
+          return `Zone ${zone} (${zoneName}): ${count} items`;
+        })
+        .join("\n");
+
+      // Show success toast
+      setToast({
+        message: `🎉 Optimization Complete!\n\nTotal SKUs placed: ${totalPlaced}\n\n${zoneSummary}\n\nSKUs have been assigned to zones based on their priority scores.`,
+        type: "success",
+        duration: 6000,
+      });
+
+      // Optionally, try AI optimization if instructions are provided
+      if (optInstructions.trim()) {
+        try {
+          const aiRes = await axios.post(`${API_BASE}/sku/optimize`, {
+            instructions: optInstructions.trim(),
+          });
+          setPlacements(aiRes.data);
+
+          const summary = aiRes.data?.assistant_summary ?? null;
+          const reassignments = Array.isArray(
+            aiRes.data?.assistant_reassignments
+          )
+            ? aiRes.data.assistant_reassignments
+            : [];
+
+          if (summary || reassignments.length > 0) {
+            setAiInsight({ summary, reassignments });
+          }
+        } catch (aiErr) {
+          console.warn("AI optimization failed, using basic placement:", aiErr);
+        }
       }
     } catch (err) {
-      console.error(err);
-      setAiInsight({
-        summary:
-          err?.response?.data?.detail ||
-          "Unable to run AI optimization. Please try again.",
-        reassignments: [],
+      console.error("Optimization error:", err);
+      setToast({
+        message: `❌ Error optimizing placement\n\n${
+          err?.response?.data?.detail || err.message
+        }`,
+        type: "error",
       });
     } finally {
       setIsOptimizing(false);
@@ -110,22 +182,203 @@ export default function AppNew() {
 
   async function resetToDemo() {
     const demo = [
-      { sku_code: "SKU001", f: 0.25, w: 0.4, s: 0.2, i: 0.3 },
-      { sku_code: "SKU002", f: 0.8, w: 0.7, s: 0.3, i: 0.5 },
-      { sku_code: "SKU003", f: 0.15, w: 0.2, s: 0.1, i: 0.2 },
+      {
+        sku_code: "SKU01",
+        product_name: "Power Bank 10,000mAh",
+        f: 180,
+        w: 1,
+        s: 300,
+        i: 18,
+      },
+      {
+        sku_code: "SKU02",
+        product_name: "ASUS Laptop 15.6''",
+        f: 60,
+        w: 2,
+        s: 5000,
+        i: 10,
+      },
+      {
+        sku_code: "SKU03",
+        product_name: "Oishi Snack 40g",
+        f: 200,
+        w: 1,
+        s: 80,
+        i: 20,
+      },
+      {
+        sku_code: "SKU04",
+        product_name: "Stainless Steel Bottle 1L",
+        f: 150,
+        w: 1,
+        s: 900,
+        i: 14,
+      },
+      {
+        sku_code: "SKU05",
+        product_name: "Mini Vacuum Cleaner",
+        f: 55,
+        w: 4,
+        s: 3500,
+        i: 9,
+      },
+      {
+        sku_code: "SKU06",
+        product_name: "Men's Sneakers",
+        f: 110,
+        w: 2,
+        s: 4000,
+        i: 8,
+      },
+      {
+        sku_code: "SKU07",
+        product_name: "Shampoo 650ml",
+        f: 160,
+        w: 2,
+        s: 1200,
+        i: 19,
+      },
+      {
+        sku_code: "SKU08",
+        product_name: "Hand Sanitizer 500ml",
+        f: 170,
+        w: 2,
+        s: 900,
+        i: 20,
+      },
+      {
+        sku_code: "SKU09",
+        product_name: "Stainless Knife Set",
+        f: 25,
+        w: 3,
+        s: 1800,
+        i: 5,
+      },
+      {
+        sku_code: "SKU10",
+        product_name: "School Backpack",
+        f: 70,
+        w: 2,
+        s: 4500,
+        i: 12,
+      },
+      {
+        sku_code: "SKU11",
+        product_name: "Blender",
+        f: 40,
+        w: 5,
+        s: 6000,
+        i: 7,
+      },
+      {
+        sku_code: "SKU12",
+        product_name: "Cotton T-shirt",
+        f: 140,
+        w: 1,
+        s: 450,
+        i: 15,
+      },
+      {
+        sku_code: "SKU13",
+        product_name: "Textbook Grade 10",
+        f: 180,
+        w: 1,
+        s: 700,
+        i: 17,
+      },
+      {
+        sku_code: "SKU14",
+        product_name: "Wireless Gaming Mouse",
+        f: 120,
+        w: 1,
+        s: 200,
+        i: 13,
+      },
+      {
+        sku_code: "SKU15",
+        product_name: "Tissue Pack (10 packs)",
+        f: 160,
+        w: 2,
+        s: 2500,
+        i: 16,
+      },
+      {
+        sku_code: "SKU16",
+        product_name: "55-inch TV",
+        f: 10,
+        w: 18,
+        s: 50000,
+        i: 3,
+      },
+      {
+        sku_code: "SKU17",
+        product_name: "Induction Cooker",
+        f: 15,
+        w: 15,
+        s: 38000,
+        i: 4,
+      },
+      {
+        sku_code: "SKU18",
+        product_name: "Bedding Set",
+        f: 50,
+        w: 10,
+        s: 25000,
+        i: 7,
+      },
+      {
+        sku_code: "SKU19",
+        product_name: "WiFi Security Camera",
+        f: 95,
+        w: 1,
+        s: 700,
+        i: 12,
+      },
+      {
+        sku_code: "SKU20",
+        product_name: "Body Wash 850ml",
+        f: 130,
+        w: 2,
+        s: 1500,
+        i: 14,
+      },
     ];
     try {
       setIsResetting(true);
       setAiInsight(null);
+
+      let successCount = 0;
+      let errorCount = 0;
+
       for (const it of demo) {
         try {
           await axios.post(`${API_BASE}/sku/add`, it);
-        } catch (_) {}
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          console.warn(
+            `Failed to add ${it.sku_code}:`,
+            err.response?.data?.detail || err.message
+          );
+        }
       }
+
       await fetchList();
+
+      setToast({
+        message: `✅ Demo Data Loaded!\n\nSuccessfully added: ${successCount} SKUs\nSkipped (already exists): ${errorCount} SKUs\n\nNow optimizing placement...`,
+        type: "success",
+        duration: 4000,
+      });
+
       await handleVisualize();
     } catch (err) {
       console.error(err);
+      setToast({
+        message: `Error loading demo data: ${err.message || "Unknown error"}`,
+        type: "error",
+        duration: 5000,
+      });
     } finally {
       setIsResetting(false);
     }
@@ -158,90 +411,113 @@ export default function AppNew() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm text-slate-600">
+                  Product Name
+                </label>
+                <input
+                  required
+                  value={sku.product_name}
+                  onChange={(e) =>
+                    setSku({ ...sku, product_name: e.target.value })
+                  }
+                  className="w-full p-3 border rounded mt-1"
+                  placeholder="e.g., Laptop Dell XPS 13"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm text-slate-600">
-                    Outbound Freq. (F)
+                    Outbound Freq.
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={sku.f}
-                    onChange={(e) =>
-                      setSku({
-                        ...sku,
-                        f: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="w-full p-2 border rounded mt-1"
-                    placeholder="e.g. 50"
-                  />
-                  <p className="text-xs text-slate-400">
-                    Nhập giá trị thực tế, hệ thống tự chuẩn hóa về 0-1.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={sku.f}
+                      onChange={(e) =>
+                        setSku({
+                          ...sku,
+                          f:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border rounded mt-1"
+                      placeholder="50"
+                    />
+                    <span className="text-sm text-slate-500 mt-1">/day</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Range: 1-200</p>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Weight (W)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={sku.w}
-                    onChange={(e) =>
-                      setSku({
-                        ...sku,
-                        w: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="w-full p-2 border rounded mt-1"
-                    placeholder="e.g. 20"
-                  />
-                  <p className="text-xs text-slate-400">
-                    Hệ thống tự chuẩn hóa về thang 0-1.
-                  </p>
+                  <label className="text-sm text-slate-600">Weight</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={sku.w}
+                      onChange={(e) =>
+                        setSku({
+                          ...sku,
+                          w:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border rounded mt-1"
+                      placeholder="20"
+                    />
+                    <span className="text-sm text-slate-500 mt-1">kg</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Range: 1-50</p>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Volume (S)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={sku.s}
-                    onChange={(e) =>
-                      setSku({
-                        ...sku,
-                        s: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="w-full p-2 border rounded mt-1"
-                    placeholder="e.g. 50000"
-                  />
-                  <p className="text-xs text-slate-400">
-                    Hệ thống tự chuẩn hóa về thang 0-1.
-                  </p>
+                  <label className="text-sm text-slate-600">Volume</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={sku.s}
+                      onChange={(e) =>
+                        setSku({
+                          ...sku,
+                          s:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border rounded mt-1"
+                      placeholder="20"
+                    />
+                    <span className="text-sm text-slate-500 mt-1">cm³</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Range: 1-100</p>
                 </div>
                 <div>
                   <label className="text-sm text-slate-600">
-                    Inbound Freq. (I)
+                    Inbound Freq.
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={sku.i}
-                    onChange={(e) =>
-                      setSku({
-                        ...sku,
-                        i: e.target.value === "" ? "" : Number(e.target.value),
-                      })
-                    }
-                    className="w-full p-2 border rounded mt-1"
-                    placeholder="e.g. 60"
-                  />
-                  <p className="text-xs text-slate-400">
-                    Hệ thống tự chuẩn hóa về thang 0-1.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={sku.i}
+                      onChange={(e) =>
+                        setSku({
+                          ...sku,
+                          i:
+                            e.target.value === "" ? "" : Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border rounded mt-1"
+                      placeholder="60"
+                    />
+                    <span className="text-sm text-slate-500 mt-1">/day</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Range: 1-200</p>
                 </div>
               </div>
 
@@ -399,6 +675,7 @@ export default function AppNew() {
                       setPlacements(null);
                       setList([]);
                       setAiInsight(null);
+                      localStorage.removeItem("warehousePlacements"); // Xóa dữ liệu đã lưu
                     }}
                     className="px-4 py-2 border rounded hover:shadow-sm active:scale-95 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-slate-400 transition"
                   >
@@ -410,9 +687,84 @@ export default function AppNew() {
 
             <div className="bg-white p-4 rounded-lg shadow">
               <h3 className="font-semibold">2D Warehouse Layout</h3>
-              <div className="mt-3">
-                <LayoutCanvas data={placements} />
-              </div>
+
+              {/* Loading State */}
+              {isOptimizing && (
+                <div className="mt-4 flex flex-col items-center justify-center py-12 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <svg
+                    className="animate-spin h-12 w-12 text-blue-600 mb-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    ></path>
+                  </svg>
+                  <p className="text-lg font-semibold text-blue-900">
+                    OpenAI is optimizing placement, please wait...
+                  </p>
+                  <p className="text-sm text-blue-700 mt-2">
+                    Analyzing SKU properties and calculating optimal positions
+                  </p>
+                </div>
+              )}
+
+              {/* Layout Canvas */}
+              {!isOptimizing && (
+                <div className="mt-3">
+                  <LayoutCanvas data={placements} />
+                </div>
+              )}
+
+              {/* Placement Results */}
+              {!isOptimizing &&
+                placements &&
+                placements.placements &&
+                placements.placements.length > 0 && (
+                  <div className="mt-4 rounded-lg bg-green-50 border-2 border-green-200 p-4">
+                    <h4 className="font-semibold text-green-900 mb-3">
+                      📦 Placement Results
+                    </h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {placements.placements.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-white p-3 rounded border border-green-200 hover:shadow-sm transition"
+                        >
+                          <div className="flex-1">
+                            <div className="font-semibold text-slate-800">
+                              {item.product_name || item.sku_code}
+                            </div>
+                            <div className="text-sm text-slate-600">
+                              SKU: {item.sku_code} • Priority:{" "}
+                              {item.priority?.toFixed(4)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-green-700 text-lg">
+                              {item.position_id}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              Zone {item.zone}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {aiInsight && (
                 <div className="mt-4 rounded-lg bg-slate-900 p-4 text-slate-100 shadow-inner">
                   <p className="text-sm font-semibold tracking-wide uppercase text-slate-200">
@@ -456,6 +808,16 @@ export default function AppNew() {
 
         <SkuTable items={list} onRefresh={fetchList} />
       </main>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type || "success"}
+          duration={toast.duration || 5000}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

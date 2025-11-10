@@ -1,19 +1,32 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-from . import models, schemas
-from .database import SessionLocal, engine, init_db
-from .services.priority_calculator import calculate_priority, priority_to_zone
-from .services.ai_client import ask_ai_for_plan
-from .services.layout_builder import generate_layout
+from backend import models
+from backend import schemas
+from backend.database import SessionLocal, engine, init_db
+from backend.services.priority_calculator import calculate_priority, priority_to_zone
+from backend.services.ai_client import ask_ai_for_plan
+from backend.services.layout_builder import generate_layout
 
+# Load environment variables from .env file
+# Get the backend directory path
+backend_dir = Path(__file__).resolve().parent
+env_path = backend_dir / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Debug: Print to verify if API key is loaded
+print(f"Loading .env from: {env_path}")
+print(f"OPENAI_API_KEY loaded: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}")
 
 app = FastAPI(title="AI Smart Warehouse Optimization (SLAP)")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +60,7 @@ def add_sku(item: schemas.SKUCreate, db: Session = Depends(get_db)):
 
     db_item = models.SKUItem(
         sku_code=item.sku_code,
+        product_name=item.product_name,
         f=item.f,
         w=item.w,
         s=item.s,
@@ -126,6 +140,7 @@ def update_sku(sku_id: int, item_update: schemas.SKUCreate, db: Session = Depend
 
     # update fields
     item.sku_code = item_update.sku_code
+    item.product_name = item_update.product_name
     item.f = item_update.f
     item.w = item_update.w
     item.s = item_update.s

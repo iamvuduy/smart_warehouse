@@ -4,6 +4,7 @@ from typing import List, Optional
 
 class SKUCreate(BaseModel):
     sku_code: str = Field(..., example="SKU001")
+    product_name: Optional[str] = Field(None, example="Laptop Dell XPS 13")
     f: float = Field(..., ge=0.0, le=1.0, example=0.25)
     w: float = Field(..., ge=0.0, le=1.0, example=0.4)
     s: float = Field(..., ge=0.0, le=1.0, example=0.2)
@@ -13,6 +14,7 @@ class SKUCreate(BaseModel):
 class SKUItemOut(BaseModel):
     id: int
     sku_code: str
+    product_name: Optional[str]
     f: float
     w: float
     s: float

@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from .. import models
+from backend import models
 
 _LAYOUT_PATH = Path(__file__).resolve().parent / ".." / "layouts" / "layout.json"
 
@@ -44,6 +44,7 @@ def generate_layout(
         zone_bands[target_zone]["items"].append(
             {
                 "sku_code": obj.sku_code,
+                "product_name": obj.product_name,
                 "priority": obj.priority,
                 "zone": target_zone,
                 "f": obj.f,
@@ -56,6 +57,11 @@ def generate_layout(
     placements = []
     warehouse_width = warehouse["width_m"]
     warehouse_height = warehouse["height_m"]
+    
+    # Configuration for cell numbering
+    BLOCK_ROWS = 2
+    BLOCK_COLS = 2
+    ROW_COUNT = 4  # number of 2x2 blocks per zone vertically
 
     for zone_id, band in zone_bands.items():
         band_width = band["to"] - band["from"]
@@ -67,11 +73,27 @@ def generate_layout(
             row = idx // cols
             x_m = band["from"] + (col + 0.5) * (band_width / max(1, cols))
             y_m = (row + 0.5) * (warehouse_height / max(1, rows))
+            
+            # Calculate position ID: Zone-Block-Cell
+            # Block number (1-4, from top to bottom)
+            block_num = (idx // (BLOCK_COLS * BLOCK_ROWS)) + 1
+            # Cell number within block (1-4: top-left=1, top-right=3, bottom-left=2, bottom-right=4)
+            cell_in_block = idx % (BLOCK_COLS * BLOCK_ROWS)
+            cell_row = cell_in_block // BLOCK_COLS
+            cell_col = cell_in_block % BLOCK_COLS
+            # Mapping: 0->1, 1->3, 2->2, 3->4 (top-left, top-right, bottom-left, bottom-right)
+            cell_mapping = [1, 3, 2, 4]
+            cell_num = cell_mapping[cell_in_block]
+            
+            position_id = f"{zone_id}-{block_num}-{cell_num}"
+            
             placements.append(
                 {
                     "sku_code": entry["sku_code"],
+                    "product_name": entry.get("product_name"),
                     "priority": entry["priority"],
                     "zone": zone_id,
+                    "position_id": position_id,
                     "x_m": round(x_m, 2),
                     "y_m": round(y_m, 2),
                 }

@@ -34,6 +34,7 @@ export default function SkuTable({ items, onRefresh }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({
     sku_code: "",
+    product_name: "",
     f: "",
     w: "",
     s: "",
@@ -46,6 +47,7 @@ export default function SkuTable({ items, onRefresh }) {
     setEditingId(item.id);
     setDraft({
       sku_code: item.sku_code,
+      product_name: item.product_name || "",
       f: item.f,
       w: item.w,
       s: item.s,
@@ -55,7 +57,7 @@ export default function SkuTable({ items, onRefresh }) {
 
   function cancelEdit() {
     setEditingId(null);
-    setDraft({ sku_code: "", f: "", w: "", s: "", i: "" });
+    setDraft({ sku_code: "", product_name: "", f: "", w: "", s: "", i: "" });
   }
 
   async function handleSave() {
@@ -72,6 +74,7 @@ export default function SkuTable({ items, onRefresh }) {
     try {
       await axios.put(`${API_BASE}/sku/${editingId}`, {
         sku_code: skuCode,
+        product_name: draft.product_name?.trim() || null,
         f: payload.f,
         w: payload.w,
         s: payload.s,
@@ -123,6 +126,7 @@ export default function SkuTable({ items, onRefresh }) {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-600 text-left">
             <tr>
+              <th className="p-3">Product Name</th>
               <th className="p-3">SKU</th>
               <th className="p-3">F (0-1)</th>
               <th className="p-3">W (0-1)</th>
@@ -139,6 +143,22 @@ export default function SkuTable({ items, onRefresh }) {
                 const isEditing = editingId === item.id;
                 return (
                   <tr key={item.id} className="border-t">
+                    <td className="p-3 align-top">
+                      {isEditing ? (
+                        <input
+                          className="w-full p-2 border rounded"
+                          value={draft.product_name}
+                          onChange={(e) =>
+                            setDraft({ ...draft, product_name: e.target.value })
+                          }
+                          placeholder="e.g., Laptop Dell XPS 13"
+                        />
+                      ) : (
+                        <span className="text-slate-700">
+                          {item.product_name || "-"}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-3 align-top">
                       {isEditing ? (
                         <input
@@ -252,7 +272,7 @@ export default function SkuTable({ items, onRefresh }) {
               })
             ) : (
               <tr>
-                <td colSpan={8} className="p-6 text-center text-slate-500">
+                <td colSpan={9} className="p-6 text-center text-slate-500">
                   No SKUs available. Add new items to see them here.
                 </td>
               </tr>

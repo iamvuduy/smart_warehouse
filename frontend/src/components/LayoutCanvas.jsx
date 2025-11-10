@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 
-const SVG_W = 960;
-const SVG_H = 540;
+const SVG_W = 1150;
+const SVG_H = 900;
 const BLOCK_COLS = 2;
 const BLOCK_ROWS = 2;
 const ROW_COUNT = 4;
@@ -45,6 +45,13 @@ const FALLBACK_STYLE = {
 export default function LayoutCanvas({ data }) {
   const [hover, setHover] = useState(null);
 
+  // Debug: log when hover changes
+  React.useEffect(() => {
+    if (hover) {
+      console.log("Hover data:", hover.data);
+    }
+  }, [hover]);
+
   const warehouse = data?.warehouse ?? DEFAULT_WAREHOUSE;
   const rackCfg = warehouse.rack ?? DEFAULT_WAREHOUSE.rack;
   const rawZones = warehouse.zones ?? DEFAULT_WAREHOUSE.zones;
@@ -79,7 +86,6 @@ export default function LayoutCanvas({ data }) {
 
   const width = warehouse.width_m || DEFAULT_WAREHOUSE.width_m;
   const height = warehouse.height_m || DEFAULT_WAREHOUSE.height_m;
-  const areaSqM = Math.round(width * height);
 
   const scale = Math.min(SVG_W / width, SVG_H / height);
   const contentWidthPx = width * scale;
@@ -124,8 +130,8 @@ export default function LayoutCanvas({ data }) {
   const blockHeightMeters =
     BLOCK_ROWS * cellSizeMeters + (BLOCK_ROWS - 1) * cellGapMeters;
 
-  let blockGapMeters = Math.max(blockHeightMeters * 1.75, cellGapMeters * 5.5);
-  blockGapMeters = Math.max(blockGapMeters, aisle * 0.6);
+  let blockGapMeters = Math.max(blockHeightMeters * 5.25, cellGapMeters * 16.5);
+  blockGapMeters = Math.max(blockGapMeters, aisle * 1.8);
   let verticalPaddingMeters = Math.max(blockGapMeters * 0.7, aisle * 0.45);
 
   let totalBlocksHeightMeters =
@@ -140,7 +146,7 @@ export default function LayoutCanvas({ data }) {
     );
     blockGapMeters =
       ROW_COUNT > 1
-        ? Math.max(cellGapMeters * 2.2, availableForGaps / (ROW_COUNT - 1))
+        ? Math.max(cellGapMeters * 16.5, availableForGaps / (ROW_COUNT - 1))
         : 0;
 
     totalBlocksHeightMeters =
@@ -151,13 +157,30 @@ export default function LayoutCanvas({ data }) {
     totalZoneHeightMeters = totalBlocksHeightMeters + verticalPaddingMeters * 2;
   }
 
-  const zoneRectTopMeters = Math.max(0, (height - totalZoneHeightMeters) / 2);
+  const centeredZoneTopMeters = Math.max(
+    0,
+    (height - totalZoneHeightMeters) / 2
+  );
+  const maxTopPaddingMeters = Math.min(
+    centeredZoneTopMeters,
+    scale > 0 ? 100 / scale : centeredZoneTopMeters
+  );
+  const zoneRectTopMeters = maxTopPaddingMeters;
   const topOffsetMeters = zoneRectTopMeters + verticalPaddingMeters;
 
-  const zoneRectY = offsetY + zoneRectTopMeters * scale;
-  const zoneRectHeight = totalZoneHeightMeters * scale;
-  const zoneLabelOffsetPx = Math.min(36, zoneRectHeight * 0.12);
-  const zoneLabelY = zoneRectY + zoneLabelOffsetPx;
+  const zoneLabelGapPx = 150;
+  const zoneLabelGapMeters = scale > 0 ? zoneLabelGapPx / scale : 0;
+  const zoneRectBottomMeters = zoneRectTopMeters + totalZoneHeightMeters;
+  const adjustedZoneTopMeters = zoneRectTopMeters + zoneLabelGapMeters;
+  const zoneRectHeightMeters = Math.max(
+    zoneRectBottomMeters - adjustedZoneTopMeters,
+    blockHeightMeters
+  );
+
+  const zoneRectY = offsetY + adjustedZoneTopMeters * scale;
+  const zoneRectHeight = zoneRectHeightMeters * scale;
+  // Fixed position: 40px from top of canvas - well above the cells
+  const zoneLabelY = 40;
 
   const gapPx = Math.min(MAX_CELL_GAP_PX, cellSizePx * 0.12);
 
@@ -194,6 +217,7 @@ export default function LayoutCanvas({ data }) {
 
           cells.push(
             <g key={`${zone.id}-${blockIndex}-${innerRow}-${col}`}>
+              {/* Main cell background */}
               <rect
                 x={xPx}
                 y={yPx}
@@ -204,24 +228,10 @@ export default function LayoutCanvas({ data }) {
                 fill={active ? style.light : style.idle}
                 stroke={style.stroke}
                 strokeWidth={1.6}
-                onMouseEnter={(event) =>
-                  active &&
-                  setHover({
-                    x: event.clientX,
-                    y: event.clientY,
-                    data: { ...item, zone: zone.id },
-                  })
-                }
-                onMouseMove={(event) =>
-                  active &&
-                  setHover({
-                    x: event.clientX,
-                    y: event.clientY,
-                    data: { ...item, zone: zone.id },
-                  })
-                }
-                onMouseLeave={() => setHover(null)}
+                style={{ pointerEvents: "none" }}
               />
+
+              {/* Inner cell */}
               <rect
                 x={xPx + innerOffset}
                 y={yPx + innerOffset}
@@ -232,7 +242,65 @@ export default function LayoutCanvas({ data }) {
                 fill={active ? style.base : `${style.base}1A`}
                 stroke={active ? style.stroke : `${style.stroke}44`}
                 strokeWidth={1}
+                style={{ pointerEvents: "none" }}
               />
+
+              {/* Hover area - smaller padding for closer interaction */}
+              <rect
+                x={xPx - 5}
+                y={yPx - 5}
+                width={rectSize + 10}
+                height={rectSize + 10}
+                fill="transparent"
+                style={{
+                  cursor: active ? "pointer" : "default",
+                  pointerEvents: active ? "all" : "none",
+                }}
+                onMouseEnter={(event) => {
+                  if (!active) return;
+
+                  const rect = event.currentTarget.getBoundingClientRect();
+
+                  const tooltipWidth = 200;
+                  const tooltipHeight = 85; // Reduced height
+                  const gap = 4; // Minimal gap
+
+                  // Use the hover rect's actual position (already includes scroll)
+                  const centerX = rect.left + rect.width / 2;
+                  const bottomY = rect.top;
+
+                  // Center tooltip horizontally with the box
+                  let tooltipX = centerX - tooltipWidth / 2;
+
+                  // Position tooltip ABOVE the box with minimal gap
+                  let tooltipY = bottomY - tooltipHeight - gap;
+
+                  // Adjust if tooltip goes off-screen horizontally
+                  const margin = 10;
+                  tooltipX = Math.max(
+                    margin,
+                    Math.min(
+                      tooltipX,
+                      window.innerWidth - tooltipWidth - margin
+                    )
+                  );
+
+                  // If not enough space above, show below
+                  if (tooltipY < margin) {
+                    tooltipY = rect.bottom + gap;
+                  }
+
+                  setHover({
+                    x: tooltipX,
+                    y: tooltipY,
+                    data: { ...item, zone: zone.id },
+                  });
+                }}
+                onMouseLeave={() => {
+                  setHover(null);
+                }}
+              />
+
               <circle
                 cx={xPx + rectSize / 2}
                 cy={yPx + rectSize / 2}
@@ -242,16 +310,31 @@ export default function LayoutCanvas({ data }) {
                 strokeWidth={active ? 1 : 0}
               />
               {active && (
-                <text
-                  x={xPx + rectSize / 2}
-                  y={yPx + rectSize / 2}
-                  fontSize={9}
-                  fill="#ffffff"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >
-                  {item.sku_code}
-                </text>
+                <>
+                  <text
+                    x={xPx + rectSize / 2}
+                    y={yPx + rectSize / 2 - 6}
+                    fontSize={8}
+                    fontWeight={600}
+                    fill="#ffffff"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {item.sku_code}
+                  </text>
+                  {item.position_id && (
+                    <text
+                      x={xPx + rectSize / 2}
+                      y={yPx + rectSize / 2 + 8}
+                      fontSize={6}
+                      fill="#e2e8f0"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      {item.position_id}
+                    </text>
+                  )}
+                </>
               )}
             </g>
           );
@@ -269,16 +352,7 @@ export default function LayoutCanvas({ data }) {
           fill={style.idle}
           fillOpacity={0.18}
         />
-        <text
-          x={columnStartPx + columnWidthPx / 2}
-          y={zoneLabelY}
-          fontSize={26}
-          fontWeight={800}
-          fill={style.stroke}
-          textAnchor="middle"
-        >
-          {zone.id}
-        </text>
+
         {cells}
       </g>
     );
@@ -298,87 +372,168 @@ export default function LayoutCanvas({ data }) {
 
         {zones.map((zone, index) => renderZone(zone, index))}
 
-        <g
-          transform={`translate(${Math.max(offsetX - 110, 16)}, ${Math.max(
-            offsetY - 20,
-            24
-          )})`}
-        >
-          <text x={0} y={0} fontSize={24} fontWeight={700} fill="#1f2937">
-            2D Warehouse Layout
-          </text>
-          <text x={0} y={22} fontSize={12} fill="#475569">
-            Area: {areaSqM.toLocaleString()} m² · Footprint: {width} m ×{" "}
-            {height} m · Levels: {rackCfg.levels ?? 0}
-          </text>
-          <text x={0} y={38} fontSize={12} fill="#475569">
-            Rack spec: {rackLength.toFixed(1)} m (L) × {rackDepth.toFixed(1)} m
-            (W), aisle ≥ {aisle} m
-          </text>
-        </g>
+        {/* Zone labels - rendered after zones so they appear on top */}
+        {zones.map((zone, zoneIndex) => {
+          const columnStartMeters =
+            aisle + zoneIndex * (columnWidthMeters + aisle);
+          const columnStartPx = offsetX + columnStartMeters * scale;
+          const style = zoneStyles[zone.id] ?? FALLBACK_STYLE;
 
+          return (
+            <g
+              key={`zone-label-${zone.id}`}
+              transform={`translate(${
+                columnStartPx + columnWidthPx / 2
+              }, ${zoneLabelY})`}
+            >
+              <rect
+                x={-30}
+                y={-28}
+                width={60}
+                height={44}
+                rx={8}
+                fill="white"
+                stroke={style.stroke}
+                strokeWidth={2.5}
+                opacity={0.98}
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
+              />
+              <text
+                x={0}
+                y={0}
+                fontSize={32}
+                fontWeight={800}
+                fill={style.base}
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {zone.id}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Main Entrance - horizontal, left of Zone A, above first block */}
         <g
-          transform={`translate(${offsetX + 24}, ${
-            offsetY + contentHeightPx / 2
+          transform={`translate(${offsetX + 10}, ${
+            offsetY + topOffsetMeters * scale - 60
           })`}
         >
           <text
             x={0}
             y={0}
-            fontSize={12}
-            fill="#1f2937"
-            textAnchor="middle"
-            transform="rotate(-90)"
+            fontSize={16}
+            fontWeight={700}
+            fill="#000000"
+            textAnchor="start"
           >
-            MAIN ENTRANCE
+            ENTRANCE →
           </text>
-          <polygon points="0,-44 -9,-26 9,-26" fill="#1f2937" />
         </g>
 
-        {zones.map((zone, idx) => (
-          <g
-            key={`legend-${zone.id}`}
-            transform={`translate(${620 + idx * 80}, ${SVG_H - 36})`}
-          >
-            <rect
-              x={0}
-              y={0}
-              width={14}
-              height={14}
-              fill={zoneStyles[zone.id]?.base ?? FALLBACK_STYLE.base}
-            />
-            <text x={20} y={12} fontSize={12} fill="#1f2937">
-              Zone {zone.id}
-            </text>
-          </g>
-        ))}
+        {/* Legend - horizontal bar at top center, below title */}
+        <g transform={`translate(${SVG_W / 2}, 90)`}>
+          {/* Background box */}
+          <rect
+            x={-200}
+            y={0}
+            width={400}
+            height={44}
+            rx={10}
+            fill="white"
+            stroke="#e5e7eb"
+            strokeWidth={2}
+            opacity={0.98}
+            filter="drop-shadow(0 2px 6px rgba(0,0,0,0.1))"
+          />
 
-        {!hasPlacements && (
-          <text
-            x={SVG_W / 2}
-            y={SVG_H / 2}
-            fontSize={18}
-            fill="#94a3b8"
-            textAnchor="middle"
-          >
-            No SKUs assigned yet. Run "Optimize Placement" to populate the map.
-          </text>
-        )}
+          {/* Legend items arranged horizontally */}
+          {zones.map((zone, idx) => {
+            const style = zoneStyles[zone.id] ?? FALLBACK_STYLE;
+            const xOffset = -180 + idx * 100;
+
+            return (
+              <g
+                key={`legend-${zone.id}`}
+                transform={`translate(${xOffset}, 22)`}
+              >
+                <rect
+                  x={0}
+                  y={0}
+                  width={24}
+                  height={24}
+                  rx={4}
+                  fill={style.base}
+                  stroke={style.stroke}
+                  strokeWidth={2}
+                />
+                <text
+                  x={32}
+                  y={15}
+                  fontSize={14}
+                  fontWeight={600}
+                  fill="#1f2937"
+                  textAnchor="start"
+                >
+                  Zone {zone.id}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+
+        {/* removed empty-state message per user request */}
       </svg>
 
       {hover && (
         <div
-          className="absolute z-50 rounded bg-slate-900 px-3 py-2 text-sm text-white shadow-lg"
-          style={{ left: hover.x + 14, top: hover.y - 40 }}
+          className="absolute z-50 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-2xl border border-slate-600"
+          style={{
+            left: hover.x,
+            top: hover.y,
+            pointerEvents: "none",
+            width: "200px",
+            position: "fixed", // Use fixed to avoid layout shifts
+          }}
         >
-          <div className="font-semibold">{hover.data.sku_code}</div>
-          <div>Zone: {hover.data.zone}</div>
-          <div>
-            Priority:{" "}
-            {hover.data.priority?.toFixed?.(4) ??
-              (typeof hover.data.priority === "number"
-                ? hover.data.priority.toFixed(4)
-                : hover.data.priority)}
+          {/* SKU Code - Header */}
+          <div className="font-bold text-sm mb-1 text-blue-300">
+            {hover.data.sku_code}
+          </div>
+
+          {/* Product Name */}
+          {hover.data.product_name && (
+            <div className="mb-1">
+              <div className="text-white font-medium text-xs leading-tight">
+                {hover.data.product_name}
+              </div>
+            </div>
+          )}
+
+          {/* Priority */}
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-700">
+            <span className="text-slate-400 text-xs">Priority:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-yellow-300 font-bold text-sm">
+                {hover.data.priority?.toFixed?.(4) ??
+                  (typeof hover.data.priority === "number"
+                    ? hover.data.priority.toFixed(4)
+                    : hover.data.priority)}
+              </span>
+              <span
+                className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                  hover.data.priority >= 0.7
+                    ? "bg-orange-600"
+                    : hover.data.priority >= 0.5
+                    ? "bg-blue-600"
+                    : hover.data.priority >= 0.3
+                    ? "bg-green-600"
+                    : "bg-purple-600"
+                }`}
+              >
+                Zone {hover.data.zone}
+              </span>
+            </div>
           </div>
         </div>
       )}

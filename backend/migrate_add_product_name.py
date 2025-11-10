@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
 from sqlalchemy import Column, Integer, String, Float
-from backend.database import Base
 
+# Add backend directory to path
+sys.path.insert(0, str(Path(__file__).parent))
 
+from database import engine, Base
+
+# Define model inline to avoid import issues
 class SKUItem(Base):
     __tablename__ = "sku_items"
 
@@ -14,3 +20,8 @@ class SKUItem(Base):
     i = Column(Float, default=0.0)
     priority = Column(Float, default=0.0)
     zone = Column(String, default="D")
+
+# Create all tables with the new schema
+Base.metadata.create_all(bind=engine)
+
+print('✓ Database tables created/updated successfully with product_name column')
