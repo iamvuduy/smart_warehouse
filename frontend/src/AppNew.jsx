@@ -22,7 +22,17 @@ export default function AppNew() {
   const [placements, setPlacements] = useState(() => {
     // Khôi phục placements từ localStorage khi load trang
     const saved = localStorage.getItem("warehousePlacements");
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log("Loaded placements from localStorage:", parsed);
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse localStorage placements:", e);
+        return null;
+      }
+    }
+    return null;
   });
   const [isAdding, setIsAdding] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -33,6 +43,7 @@ export default function AppNew() {
   // Lưu placements vào localStorage mỗi khi nó thay đổi
   useEffect(() => {
     if (placements) {
+      console.log("Saving placements to localStorage:", placements);
       localStorage.setItem("warehousePlacements", JSON.stringify(placements));
     }
   }, [placements]);
@@ -252,7 +263,7 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.f || ''}
+                      value={sku.f || ""}
                       onChange={(e) =>
                         setSku({
                           ...sku,
@@ -273,7 +284,7 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.w || ''}
+                      value={sku.w || ""}
                       onChange={(e) =>
                         setSku({
                           ...sku,
@@ -294,7 +305,7 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.s || ''}
+                      value={sku.s || ""}
                       onChange={(e) =>
                         setSku({
                           ...sku,
@@ -317,7 +328,7 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.i || ''}
+                      value={sku.i || ""}
                       onChange={(e) =>
                         setSku({
                           ...sku,
