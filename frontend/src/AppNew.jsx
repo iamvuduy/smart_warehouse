@@ -26,7 +26,6 @@ export default function AppNew() {
   });
   const [isAdding, setIsAdding] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [aiInsight, setAiInsight] = useState(null);
   const [optInstructions, setOptInstructions] = useState("");
   const [toast, setToast] = useState(null);
@@ -46,19 +45,19 @@ export default function AppNew() {
     try {
       const res = await axios.get(`${API_BASE}/sku/list`);
       setList(res.data);
-      
+
       // Nếu có placement và SKU list thay đổi, cần validate placements
       if (placements && placements.placements) {
-        const currentSkuIds = res.data.map(item => item.id);
-        const filteredPlacements = placements.placements.filter(p => 
+        const currentSkuIds = res.data.map((item) => item.id);
+        const filteredPlacements = placements.placements.filter((p) =>
           currentSkuIds.includes(p.id)
         );
-        
+
         // Nếu có SKU bị xóa, cập nhật placements
         if (filteredPlacements.length !== placements.placements.length) {
           const newPlacements = {
             ...placements,
-            placements: filteredPlacements
+            placements: filteredPlacements,
           };
           setPlacements(newPlacements);
         }
@@ -200,210 +199,6 @@ export default function AppNew() {
     }
   }
 
-  async function resetToDemo() {
-    const demo = [
-      {
-        sku_code: "SKU01",
-        product_name: "Power Bank 10,000mAh",
-        f: 180,
-        w: 1,
-        s: 300,
-        i: 18,
-      },
-      {
-        sku_code: "SKU02",
-        product_name: "ASUS Laptop 15.6''",
-        f: 60,
-        w: 2,
-        s: 5000,
-        i: 10,
-      },
-      {
-        sku_code: "SKU03",
-        product_name: "Oishi Snack 40g",
-        f: 200,
-        w: 1,
-        s: 80,
-        i: 20,
-      },
-      {
-        sku_code: "SKU04",
-        product_name: "Stainless Steel Bottle 1L",
-        f: 150,
-        w: 1,
-        s: 900,
-        i: 14,
-      },
-      {
-        sku_code: "SKU05",
-        product_name: "Mini Vacuum Cleaner",
-        f: 55,
-        w: 4,
-        s: 3500,
-        i: 9,
-      },
-      {
-        sku_code: "SKU06",
-        product_name: "Men's Sneakers",
-        f: 110,
-        w: 2,
-        s: 4000,
-        i: 8,
-      },
-      {
-        sku_code: "SKU07",
-        product_name: "Shampoo 650ml",
-        f: 160,
-        w: 2,
-        s: 1200,
-        i: 19,
-      },
-      {
-        sku_code: "SKU08",
-        product_name: "Hand Sanitizer 500ml",
-        f: 170,
-        w: 2,
-        s: 900,
-        i: 20,
-      },
-      {
-        sku_code: "SKU09",
-        product_name: "Stainless Knife Set",
-        f: 25,
-        w: 3,
-        s: 1800,
-        i: 5,
-      },
-      {
-        sku_code: "SKU10",
-        product_name: "School Backpack",
-        f: 70,
-        w: 2,
-        s: 4500,
-        i: 12,
-      },
-      {
-        sku_code: "SKU11",
-        product_name: "Blender",
-        f: 40,
-        w: 5,
-        s: 6000,
-        i: 7,
-      },
-      {
-        sku_code: "SKU12",
-        product_name: "Cotton T-shirt",
-        f: 140,
-        w: 1,
-        s: 450,
-        i: 15,
-      },
-      {
-        sku_code: "SKU13",
-        product_name: "Textbook Grade 10",
-        f: 180,
-        w: 1,
-        s: 700,
-        i: 17,
-      },
-      {
-        sku_code: "SKU14",
-        product_name: "Wireless Gaming Mouse",
-        f: 120,
-        w: 1,
-        s: 200,
-        i: 13,
-      },
-      {
-        sku_code: "SKU15",
-        product_name: "Tissue Pack (10 packs)",
-        f: 160,
-        w: 2,
-        s: 2500,
-        i: 16,
-      },
-      {
-        sku_code: "SKU16",
-        product_name: "55-inch TV",
-        f: 10,
-        w: 18,
-        s: 50000,
-        i: 3,
-      },
-      {
-        sku_code: "SKU17",
-        product_name: "Induction Cooker",
-        f: 15,
-        w: 15,
-        s: 38000,
-        i: 4,
-      },
-      {
-        sku_code: "SKU18",
-        product_name: "Bedding Set",
-        f: 50,
-        w: 10,
-        s: 25000,
-        i: 7,
-      },
-      {
-        sku_code: "SKU19",
-        product_name: "WiFi Security Camera",
-        f: 95,
-        w: 1,
-        s: 700,
-        i: 12,
-      },
-      {
-        sku_code: "SKU20",
-        product_name: "Body Wash 850ml",
-        f: 130,
-        w: 2,
-        s: 1500,
-        i: 14,
-      },
-    ];
-    try {
-      setIsResetting(true);
-      setAiInsight(null);
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const it of demo) {
-        try {
-          await axios.post(`${API_BASE}/sku/add`, it);
-          successCount++;
-        } catch (err) {
-          errorCount++;
-          console.warn(
-            `Failed to add ${it.sku_code}:`,
-            err.response?.data?.detail || err.message
-          );
-        }
-      }
-
-      await fetchList();
-
-      setToast({
-        message: `✅ Demo Data Loaded!\n\nSuccessfully added: ${successCount} SKUs\nSkipped (already exists): ${errorCount} SKUs\n\nNow optimizing placement...`,
-        type: "success",
-        duration: 4000,
-      });
-
-      await handleVisualize();
-    } catch (err) {
-      console.error(err);
-      setToast({
-        message: `Error loading demo data: ${err.message || "Unknown error"}`,
-        type: "error",
-        duration: 5000,
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  }
-
   return (
     <div className="min-h-screen p-6 bg-slate-50">
       <header className="max-w-7xl mx-auto mb-6">
@@ -491,7 +286,7 @@ export default function AppNew() {
                     />
                     <span className="text-sm text-slate-500 mt-1">kg</span>
                   </div>
-                  <p className="text-xs text-slate-400">Range: 1-50</p>
+                  <p className="text-xs text-slate-400">Range: 1-20</p>
                 </div>
                 <div>
                   <label className="text-sm text-slate-600">Volume</label>
@@ -513,7 +308,7 @@ export default function AppNew() {
                     />
                     <span className="text-sm text-slate-500 mt-1">cm³</span>
                   </div>
-                  <p className="text-xs text-slate-400">Range: 1-100</p>
+                  <p className="text-xs text-slate-400">Range: 1-50000</p>
                 </div>
                 <div>
                   <label className="text-sm text-slate-600">
@@ -537,7 +332,7 @@ export default function AppNew() {
                     />
                     <span className="text-sm text-slate-500 mt-1">/day</span>
                   </div>
-                  <p className="text-xs text-slate-400">Range: 1-200</p>
+                  <p className="text-xs text-slate-400">Range: 1-20</p>
                 </div>
               </div>
 
@@ -578,47 +373,6 @@ export default function AppNew() {
                     </span>
                   ) : (
                     "+ Add SKU to List"
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={resetToDemo}
-                  className={
-                    "px-4 py-3 rounded text-white transition " +
-                    (isResetting
-                      ? "bg-slate-700 opacity-80 cursor-wait"
-                      : "bg-slate-800 hover:bg-slate-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-700")
-                  }
-                  disabled={isResetting}
-                  aria-busy={isResetting}
-                >
-                  {isResetting ? (
-                    <span className="inline-flex items-center">
-                      <svg
-                        className="animate-spin h-4 w-4 mr-2 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        ></path>
-                      </svg>
-                      Resetting...
-                    </span>
-                  ) : (
-                    "Reset to Demo"
                   )}
                 </button>
               </div>
