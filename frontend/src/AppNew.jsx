@@ -252,16 +252,15 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.f}
+                      value={sku.f || ''}
                       onChange={(e) =>
                         setSku({
                           ...sku,
-                          f:
-                            e.target.value === "" ? 0 : Number(e.target.value),
+                          f: e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
-                      placeholder="50"
+                      placeholder=""
                     />
                     <span className="text-sm text-slate-500 mt-1">/day</span>
                   </div>
@@ -274,16 +273,15 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.w}
+                      value={sku.w || ''}
                       onChange={(e) =>
                         setSku({
                           ...sku,
-                          w:
-                            e.target.value === "" ? 0 : Number(e.target.value),
+                          w: e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
-                      placeholder="20"
+                      placeholder=""
                     />
                     <span className="text-sm text-slate-500 mt-1">kg</span>
                   </div>
@@ -296,16 +294,15 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.s}
+                      value={sku.s || ''}
                       onChange={(e) =>
                         setSku({
                           ...sku,
-                          s:
-                            e.target.value === "" ? 0 : Number(e.target.value),
+                          s: e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
-                      placeholder="20"
+                      placeholder=""
                     />
                     <span className="text-sm text-slate-500 mt-1">cm³</span>
                   </div>
@@ -320,16 +317,15 @@ export default function AppNew() {
                       type="number"
                       min="0"
                       step="0.01"
-                      value={sku.i}
+                      value={sku.i || ''}
                       onChange={(e) =>
                         setSku({
                           ...sku,
-                          i:
-                            e.target.value === "" ? 0 : Number(e.target.value),
+                          i: e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
-                      placeholder="60"
+                      placeholder=""
                     />
                     <span className="text-sm text-slate-500 mt-1">/day</span>
                   </div>
