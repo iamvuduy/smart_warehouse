@@ -179,9 +179,14 @@ export default function AppNew() {
       // Optionally, try AI optimization if instructions are provided
       if (optInstructions.trim()) {
         try {
+          console.log(
+            "[AI] Calling optimize with instructions:",
+            optInstructions.trim()
+          );
           const aiRes = await axios.post(`${API_BASE}/sku/optimize`, {
             instructions: optInstructions.trim(),
           });
+          console.log("[AI] Optimize response:", aiRes.data);
           setPlacements(aiRes.data);
 
           const summary = aiRes.data?.assistant_summary ?? null;
@@ -191,11 +196,26 @@ export default function AppNew() {
             ? aiRes.data.assistant_reassignments
             : [];
 
+          console.log("[AI] Summary:", summary);
+          console.log("[AI] Reassignments:", reassignments);
+
           if (summary || reassignments.length > 0) {
             setAiInsight({ summary, reassignments });
+
+            // Update toast to show AI was applied
+            setToast({
+              message: `🎉 AI Optimization Complete!\n\nTotal SKUs placed: ${totalPlaced}\n\n${zoneSummary}\n\n✨ AI Instructions applied: ${reassignments.length} SKUs reassigned`,
+              type: "success",
+              duration: 8000,
+            });
           }
         } catch (aiErr) {
-          console.warn("AI optimization failed, using basic placement:", aiErr);
+          console.error("[AI] Optimization failed:", aiErr);
+          setToast({
+            message: `⚠️ AI optimization failed: ${aiErr.message}\n\nUsing priority-based placement instead.`,
+            type: "warning",
+            duration: 5000,
+          });
         }
       }
     } catch (err) {

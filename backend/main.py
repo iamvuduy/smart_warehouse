@@ -132,13 +132,17 @@ def optimize(
         for item in items
     ]
 
+    print(f"[OPTIMIZE] Instructions: {request.instructions}")
     ai_plan = ask_ai_for_plan(ai_payload, request.instructions)
+    print(f"[OPTIMIZE] AI plan summary: {ai_plan.get('summary')}")
+    print(f"[OPTIMIZE] AI reassignments count: {len(ai_plan.get('reassignments', []))}")
 
     zone_overrides = {
         entry["sku_code"]: entry["recommended_zone"]
         for entry in ai_plan.get("reassignments", [])
         if isinstance(entry, dict)
     }
+    print(f"[OPTIMIZE] Zone overrides: {zone_overrides}")
 
     layout = generate_layout(db, zone_overrides=zone_overrides)
     layout["assistant_summary"] = ai_plan.get("summary")
