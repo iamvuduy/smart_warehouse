@@ -397,7 +397,11 @@ export default function AppNew() {
                     value={optInstructions}
                     onChange={(e) => setOptInstructions(e.target.value)}
                     rows={3}
-                    placeholder="E.g. keep fastest-moving items in Zone A."
+                    placeholder="Examples:
+- Keep heavy items (weight > 10) in Zone D
+- SKU01, SKU05 must be in Zone A
+- Items with volume > 30000 should avoid Zone B
+- Prioritize inbound frequency > 15 for Zone A"
                     className="mt-1 w-full rounded border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>

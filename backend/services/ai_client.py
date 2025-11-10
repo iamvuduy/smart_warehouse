@@ -29,13 +29,21 @@ def build_ai_prompt(
         "You are an expert warehouse optimization assistant.",
         "Given the SKU metrics below, recommend the optimal zone (A, B, C, or D) for each SKU.",
         "Zones are ordered from fastest dispatch (A) to slowest (D).",
+        "",
+        "DEFAULT RULES (unless overridden by operator instructions):",
+        "- High priority items (priority > 0.7) should be in Zone A or B",
+        "- Heavy items (weight > 10) typically go to Zone D for safety",
+        "- High-frequency items (f > 150) should be near dispatch (Zone A/B)",
+        "- Large volume items (s > 30000) may need specific zones",
+        "",
+        "OPERATOR INSTRUCTIONS (these override default rules):",
+        instructions.strip() if instructions else "None provided - use default rules only",
+        "",
         "Respond with JSON containing a 'summary' string and a 'reassignments' array.",
         "Each element must have sku_code, recommended_zone, confidence (0-1), and reason.",
-        "Example response: {\"summary\": \"...\", \"reassignments\":[{\"sku_code\":\"SKU1\",...}]}",
+        "The 'reason' field MUST explain which rule or instruction was applied.",
+        "Example response: {\"summary\": \"Applied 3 custom rules, reassigned 5 SKUs\", \"reassignments\":[{\"sku_code\":\"SKU1\",\"recommended_zone\":\"A\",\"confidence\":0.95,\"reason\":\"High inbound frequency (f=180) matches operator rule\"}]}",
     ]
-
-    if instructions:
-        lines.append(f"Operator instructions: {instructions.strip()}")
 
     lines.append("SKU data:")
     for item in items:
