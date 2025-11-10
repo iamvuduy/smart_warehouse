@@ -592,11 +592,14 @@ export default function AppNew() {
           </section>
         </div>
 
-        <SkuTable
-          items={list}
-          onRefresh={fetchList}
-          onDelete={cleanupPlacements}
-        />
+        {/* SKU Details Table - Always visible for reference */}
+        <section className="bg-slate-100 p-1 rounded-lg">
+          <SkuTable
+            items={list}
+            onRefresh={fetchList}
+            onDelete={cleanupPlacements}
+          />
+        </section>
       </main>
 
       {/* Toast Notification */}
