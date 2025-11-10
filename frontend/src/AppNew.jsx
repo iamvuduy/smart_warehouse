@@ -6,7 +6,8 @@ import Toast from "./components/Toast";
 
 // Use environment variable for API base URL (supports both local and production)
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://smart-warehouse-aagw.onrender.com/api";
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://smart-warehouse-aagw.onrender.com/api";
 
 export default function AppNew() {
   const [sku, setSku] = useState({
@@ -45,6 +46,23 @@ export default function AppNew() {
     try {
       const res = await axios.get(`${API_BASE}/sku/list`);
       setList(res.data);
+      
+      // Nếu có placement và SKU list thay đổi, cần validate placements
+      if (placements && placements.placements) {
+        const currentSkuIds = res.data.map(item => item.id);
+        const filteredPlacements = placements.placements.filter(p => 
+          currentSkuIds.includes(p.id)
+        );
+        
+        // Nếu có SKU bị xóa, cập nhật placements
+        if (filteredPlacements.length !== placements.placements.length) {
+          const newPlacements = {
+            ...placements,
+            placements: filteredPlacements
+          };
+          setPlacements(newPlacements);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
