@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://smart-warehouse-aagw.onrender.com/api";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://smart-warehouse-aagw.onrender.com/api";
 
 function normalizeInputs(raw) {
   const safe = (value) => {
@@ -133,7 +135,6 @@ export default function SkuTable({ items, onRefresh }) {
               <th className="p-3">S (0-1)</th>
               <th className="p-3">I (0-1)</th>
               <th className="p-3">Priority</th>
-              <th className="p-3">Zone</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -169,7 +170,7 @@ export default function SkuTable({ items, onRefresh }) {
                           }
                         />
                       ) : (
-                        item.sku_code
+                        item.sku_code.replace(/^SKU/i, '')
                       )}
                     </td>
                     <td className="p-3 align-top">
@@ -231,7 +232,6 @@ export default function SkuTable({ items, onRefresh }) {
                     <td className="p-3 align-top">
                       {formatValue(item.priority)}
                     </td>
-                    <td className="p-3 align-top">{item.zone}</td>
                     <td className="p-3 align-top">
                       {isEditing ? (
                         <div className="flex justify-end gap-2">
