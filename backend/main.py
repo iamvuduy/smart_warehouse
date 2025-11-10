@@ -24,24 +24,12 @@ print(f"OPENAI_API_KEY loaded: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}"
 
 app = FastAPI(title="AI Smart Warehouse Optimization (SLAP)")
 
-# Configure CORS for production and development
-# Allow specific origins and wildcards
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000", 
-    "https://smart-warehouse-iota.vercel.app",
-    "https://*.vercel.app",
-]
-
-# For production, use regex to match vercel domains
-import re
-allow_origin_regex = r"https://.*\.vercel\.app"
-
+# CORS Configuration - Simplified for maximum compatibility
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=allow_origin_regex,
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
