@@ -18,6 +18,8 @@ frontend/.vite/
 # Environment variables / secrets
 *.env
 .env*
+!.env.example
+!.env.template
 
 # VS Code workspace
 .vscode/
