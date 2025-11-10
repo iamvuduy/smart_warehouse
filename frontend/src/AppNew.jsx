@@ -6,7 +6,7 @@ import Toast from "./components/Toast";
 
 // Use environment variable for API base URL (supports both local and production)
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+  import.meta.env.VITE_API_BASE_URL || "https://smart-warehouse-aagw.onrender.com/api";
 
 export default function AppNew() {
   const [sku, setSku] = useState({
