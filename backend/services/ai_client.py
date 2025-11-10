@@ -81,11 +81,10 @@ def ask_ai_for_plan(
             messages=[
                 {
                     "role": "system",
-                    "content": "You generate concise, structured warehouse slotting recommendations.",
+                    "content": "You generate concise, structured warehouse slotting recommendations. Always respond with valid JSON.",
                 },
                 {"role": "user", "content": prompt},
             ],
-            response_format={"type": "json_object"},
             temperature=0.3,
             max_tokens=600,
         )
