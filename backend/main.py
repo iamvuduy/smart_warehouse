@@ -25,17 +25,10 @@ print(f"OPENAI_API_KEY loaded: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}"
 app = FastAPI(title="AI Smart Warehouse Optimization (SLAP)")
 
 # Configure CORS for production and development
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://*.railway.app",
-    "https://*.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for simplicity
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when using allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
