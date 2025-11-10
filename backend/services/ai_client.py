@@ -76,6 +76,7 @@ def ask_ai_for_plan(
     prompt = build_ai_prompt(items, instructions)
 
     try:
+        print(f"[DEBUG] Calling OpenAI API with prompt length: {len(prompt)}")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -90,9 +91,13 @@ def ask_ai_for_plan(
         )
 
         content = response.choices[0].message.content if response.choices else ""
+        print(f"[DEBUG] OpenAI response received, length: {len(content)}")
 
         data = json.loads(content) if content else {}
     except Exception as exc:  # pragma: no cover - network/JSON errors
+        import traceback
+        print(f"[ERROR] OpenAI API call failed: {exc}")
+        print(traceback.format_exc())
         return {
             "summary": f"AI optimization unavailable: {exc}",
             "reassignments": [],
