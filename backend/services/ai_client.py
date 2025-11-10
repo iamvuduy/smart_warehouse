@@ -76,9 +76,9 @@ def ask_ai_for_plan(
     prompt = build_ai_prompt(items, instructions)
 
     try:
-        response = client.responses.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
-            input=[
+            messages=[
                 {
                     "role": "system",
                     "content": "You generate concise, structured warehouse slotting recommendations.",
@@ -87,17 +87,10 @@ def ask_ai_for_plan(
             ],
             response_format={"type": "json_object"},
             temperature=0.3,
-            max_output_tokens=600,
+            max_tokens=600,
         )
 
-        content = ""
-        if response.output:
-            parts = []
-            for block in response.output:
-                for segment in block.content:
-                    if segment.type == "output_text":
-                        parts.append(segment.text)
-            content = "".join(parts).strip()
+        content = response.choices[0].message.content if response.choices else ""
 
         data = json.loads(content) if content else {}
     except Exception as exc:  # pragma: no cover - network/JSON errors

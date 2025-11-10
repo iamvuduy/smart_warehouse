@@ -16,10 +16,11 @@ function normalizeInputs(raw) {
   const rs = safe(raw.s);
   const ri = safe(raw.i);
 
-  const f = rf >= 0 && rf <= 1 ? rf : Math.min(1, rf / 200);
-  const w = rw >= 0 && rw <= 1 ? rw : Math.min(1, rw / 20);
-  const s = rs >= 0 && rs <= 1 ? rs : Math.min(1, rs / 50000);
-  const i = ri >= 0 && ri <= 1 ? ri : Math.min(1, ri / 20);
+  // Always normalize to 0-1 scale based on max values
+  const f = Math.min(1, rf / 200);
+  const w = Math.min(1, rw / 20);
+  const s = Math.min(1, rs / 50000);
+  const i = Math.min(1, ri / 20);
 
   return { f, w, s, i };
 }

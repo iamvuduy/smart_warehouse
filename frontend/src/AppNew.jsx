@@ -80,10 +80,11 @@ export default function AppNew() {
     const rs = safe(raw.s);
     const ri = safe(raw.i);
 
-    const f = rf >= 0 && rf <= 1 ? rf : Math.min(1, rf / 200);
-    const w = rw >= 0 && rw <= 1 ? rw : Math.min(1, rw / 20);
-    const i = ri >= 0 && ri <= 1 ? ri : Math.min(1, ri / 20);
-    const s = rs >= 0 && rs <= 1 ? rs : Math.min(1, rs / 50000);
+    // Always normalize to 0-1 scale based on max values
+    const f = Math.min(1, rf / 200);
+    const w = Math.min(1, rw / 20);
+    const i = Math.min(1, ri / 20);
+    const s = Math.min(1, rs / 50000);
 
     return { f, w, s, i };
   }
@@ -256,7 +257,7 @@ export default function AppNew() {
                         setSku({
                           ...sku,
                           f:
-                            e.target.value === "" ? "" : Number(e.target.value),
+                            e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
@@ -278,7 +279,7 @@ export default function AppNew() {
                         setSku({
                           ...sku,
                           w:
-                            e.target.value === "" ? "" : Number(e.target.value),
+                            e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
@@ -300,7 +301,7 @@ export default function AppNew() {
                         setSku({
                           ...sku,
                           s:
-                            e.target.value === "" ? "" : Number(e.target.value),
+                            e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
@@ -324,7 +325,7 @@ export default function AppNew() {
                         setSku({
                           ...sku,
                           i:
-                            e.target.value === "" ? "" : Number(e.target.value),
+                            e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border rounded mt-1"
