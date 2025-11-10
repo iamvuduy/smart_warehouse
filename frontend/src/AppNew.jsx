@@ -52,27 +52,30 @@ export default function AppNew() {
     fetchList();
   }, []);
 
+  // Validate placements when SKU list changes
+  useEffect(() => {
+    if (placements && placements.placements && list.length > 0) {
+      const currentSkuIds = list.map((item) => item.id);
+      const filteredPlacements = placements.placements.filter((p) =>
+        currentSkuIds.includes(p.id)
+      );
+
+      // Nếu có SKU bị xóa, cập nhật placements
+      if (filteredPlacements.length !== placements.placements.length) {
+        console.log("Cleaning up deleted SKUs from placements");
+        const newPlacements = {
+          ...placements,
+          placements: filteredPlacements,
+        };
+        setPlacements(newPlacements);
+      }
+    }
+  }, [list]);
+
   async function fetchList() {
     try {
       const res = await axios.get(`${API_BASE}/sku/list`);
       setList(res.data);
-
-      // Nếu có placement và SKU list thay đổi, cần validate placements
-      if (placements && placements.placements) {
-        const currentSkuIds = res.data.map((item) => item.id);
-        const filteredPlacements = placements.placements.filter((p) =>
-          currentSkuIds.includes(p.id)
-        );
-
-        // Nếu có SKU bị xóa, cập nhật placements
-        if (filteredPlacements.length !== placements.placements.length) {
-          const newPlacements = {
-            ...placements,
-            placements: filteredPlacements,
-          };
-          setPlacements(newPlacements);
-        }
-      }
     } catch (err) {
       console.error(err);
     }
