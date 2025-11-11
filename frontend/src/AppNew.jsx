@@ -358,7 +358,7 @@ export default function AppNew() {
                       className="w-full p-2 border rounded mt-1"
                       placeholder=""
                     />
-                    <span className="text-sm text-slate-500 mt-1">/day</span>
+                    <span className="text-sm text-slate-500 mt-1">/month</span>
                   </div>
                   <p className="text-xs text-slate-400">Range: 1-20</p>
                 </div>
@@ -417,22 +417,6 @@ export default function AppNew() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 w-full md:w-auto md:flex-row md:items-center">
-                <div className="w-full md:w-64">
-                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                    AI Instructions (optional)
-                  </label>
-                  <textarea
-                    value={optInstructions}
-                    onChange={(e) => setOptInstructions(e.target.value)}
-                    rows={3}
-                    placeholder="Examples:
-- Keep heavy items (weight > 10) in Zone D
-- SKU01, SKU05 must be in Zone A
-- Items with volume > 30000 should avoid Zone B
-- Prioritize inbound frequency > 15 for Zone A"
-                    className="mt-1 w-full rounded border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-300"
-                  />
-                </div>
                 <div className="flex items-center gap-3 md:self-end">
                   <button
                     onClick={handleVisualize}
