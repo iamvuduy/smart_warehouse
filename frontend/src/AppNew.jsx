@@ -234,10 +234,9 @@ export default function AppNew() {
   return (
     <div className="min-h-screen p-6 bg-slate-50">
       <header className="max-w-7xl mx-auto mb-6">
-        <h1 className="text-3xl font-extrabold">AI Warehouse Optimizer</h1>
-        <p className="text-sm text-slate-600">
-          Smart Storage Location Assignment (SLAP)
-        </p>
+        <h1 className="text-3xl font-extrabold">
+          Storage Location Assignment Problem (SLAP)
+        </h1>
       </header>
 
       <main className="max-w-7xl mx-auto flex flex-col gap-6">
