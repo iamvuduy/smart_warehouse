@@ -4,7 +4,7 @@ import LayoutCanvas from "./components/LayoutCanvas";
 import SkuTable from "./components/SkuTable";
 import Toast from "./components/Toast";
 
-// Use environment variable for API base URL (supports both local and production)
+// API Configuration
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   "https://smart-warehouse-aagw.onrender.com/api";
